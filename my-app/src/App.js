@@ -1,59 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './App.css'
+import CardList from './Components/CardList/CardList';
+import Modal from './Components/Modal/Modal';
+import './App.css';
 
-// Карточка компонента
-const Card = ({ item }) => {
-  const [liked, setLiked] = useState(false);
-
-  const handleLikeToggle = () => {
-    setLiked(!liked);
-  };
-
-  return (
-    <div className={`card ${liked ? 'like' : ''}`}>
-      <img src={item.image} alt="item" />
-      <button onClick={handleLikeToggle}>{liked ? 'Unlike' : 'Like'}</button>
-    </div>
-  );
-};
-
-// Список карточек компонента
-const CardList = ({ items }) => {
-  return (
-    <div className="card-list">
-      {items.map((item, index) => (
-        <Card key={index} item={item} />
-      ))}
-    </div>
-  );
-};
-
-// Модальное окно компонента
-const Modal = ({ isOpen, onClose }) => {
-  return (
-    isOpen && (
-      <div className="modal">
-        <button onClick={onClose}>Close</button>
-        <p>Modal content goes here</p>
-      </div>
-    )
-  );
-};
-
-// Главный компонент
 const App = () => {
   const [items, setItems] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(null);
 
   useEffect(() => {
-    // Получение данных из API при загрузке компонента
-    axios.get('https://dog.ceo/api/breeds/image/random/10')
+    axios.get('https://api.thecatapi.com/v1/images/search?limit=10')
       .then(response => {
-        setItems(response.data.message.map((image, index) => ({
-          id: index,
-          image: image
-        })));
+        setItems(response.data);
       })
       .catch(error => {
         console.error('Error fetching data:', error);
@@ -64,12 +23,40 @@ const App = () => {
     setModalOpen(!modalOpen);
   };
 
+  const handleContextMenu = (index) => {
+    setSelectedItemIndex(index);
+    setModalOpen(true);
+  };
+
+  const handleDelete = (index) => {
+    const updatedItems = [...items];
+    updatedItems.splice(index, 1);
+    setItems(updatedItems);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (index) => {
+    console.log('Edit item:', index);
+    setModalOpen(false);
+  };
+
+  const handleAdd = () => {
+    axios.get('https://api.thecatapi.com/v1/images/search?limit=1')
+      .then(response => {
+        const newItems = [...items, response.data[0]];
+        setItems(newItems);
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+      });
+  };
+
   return (
     <div className="app">
-      <h1>My App</h1>
-      <button onClick={handleModalToggle}>Toggle Modal</button>
-      <CardList items={items} />
-      <Modal isOpen={modalOpen} onClose={handleModalToggle} />
+      <h1>Тут котики</h1>
+      <button onClick={handleModalToggle}>Менюшка</button>
+      <CardList items={items} onContextMenu={handleContextMenu} />
+      <Modal isOpen={modalOpen} onClose={handleModalToggle} selectedItemIndex={selectedItemIndex} onDelete={handleDelete} onEdit={handleEdit} onAdd={handleAdd} />
     </div>
   );
 };
